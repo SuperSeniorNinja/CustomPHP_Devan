@@ -1,0 +1,157 @@
+.navbar {
+    margin-bottom: 0;
+}
+
+h3{
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+input {
+    text-align: right;
+}
+.action-button {
+    text-transform: uppercase;
+    width: 200px;
+    display: block;
+    margin-bottom: 10px;
+}
+.process-table>thead>tr>th {
+    border: 0px;
+    text-align: center;
+}
+
+.process-table>tbody>tr>td {
+    border:0px;
+    height: 25px;
+    text-align: center;
+	    width: 24%;
+		font-size:100px;
+
+}
+
+.current-shift-table {
+    width: 80%;
+    border: 0px;
+}
+
+.current-shift-table>thead>tr>th {
+    border-bottom: 0px;
+    text-align: center;
+}
+
+.current-shift-table>tbody>tr>td {
+    border-top:0px;
+    height: 25px;
+}
+
+@media (min-width: 992px){
+    .container {
+        width: 1600px;
+    }
+
+    .form-div{
+        text-align: center;
+    }
+
+    #day_no{
+        width: 50px;
+    }
+
+    #current_time{
+        width: 120px;
+    }
+
+    #hours{
+        width: 50px;
+    }
+
+}
+
+
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px) {
+    .form-div{
+        text-align: center;
+    }
+
+    #day_no{
+        width: 50px;
+    }
+
+    #current_time{
+        width: 120px;
+    }
+
+    #hours{
+        width: 50px;
+    }
+}
+
+#priority_table {
+    overflow: auto;
+}
+
+#barcode_table_div{
+    padding: 20px;
+}
+
+#barcode_table{
+    background-color: white;
+}
+
+.barcode-table>tbody>tr>td {
+    height: 40px;
+}
+
+.current-shift-output {
+    width: 90%;
+    border: 0px;
+}
+
+.current-shift-output>thead>tr>th {
+    border-bottom: 0px;
+    text-align: center;
+    height: 50px;
+    font-size: 20px;
+    font-weight: bold;
+    background-color: #ffcc99;
+}
+
+.current-shift-output>tbody>tr>td {
+    border-top:0px;
+    height: 50px;
+}
+
+.header-fixed {
+    width: 100%;
+}
+
+.header-fixed > thead,
+.header-fixed > tbody,
+.header-fixed > thead > tr,
+.header-fixed > tbody > tr,
+.header-fixed > thead > tr > th,
+.header-fixed > tbody > tr > td {
+    display: block;
+}
+
+.header-fixed > tbody > tr:after,
+.header-fixed > thead > tr:after {
+    content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+}
+
+.header-fixed > tbody {
+    overflow-y: auto;
+    height: 500px;
+}
+
+.header-fixed > tbody > tr > td,
+.header-fixed > thead > tr > th {
+
+    float: left;
+}
