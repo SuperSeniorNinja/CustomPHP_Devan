@@ -1002,7 +1002,8 @@ function read_container_devan_member_screen($post_data)
     if(mysqli_num_rows($result) > 0) {
         $devan = mysqli_fetch_array($result);
         //Update Renban No
-        $renban_no = update_renban_no($devan['id']);
+        $renban_no = get_setting('renban_no_prefix');
+        //$renban_no = update_renban_no($devan['id']);
 
         echo '<div class="row" style="background-color: #1797FF; color: #FFF;">';
         echo '<div class="offset-md-2 col-md-7" style="padding: 50px 10px; min-width: 650px;">';

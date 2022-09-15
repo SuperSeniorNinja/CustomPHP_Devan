@@ -20,7 +20,7 @@ else {
             $highestColumn      = $sheet->getHighestColumn();
             $highestColumnIndex = PHPExcel_Cell::columnIndexFromString($highestColumn);
 
-            //	loop over the rows
+            //  loop over the rows
             $start_row = 27;
             $records = $array = array(
                 array(
@@ -50,12 +50,12 @@ else {
             $col = PHPExcel_Cell::columnIndexFromString('CL') - 1;
             $approved_by = $sheet->getCellByColumnAndRow($col, 1)->getValue();
 
-            $cell = $sheet->getCellByColumnAndRow(0, 27);
+            $cell = $sheet->getCellByColumnAndRow(0, $start_row);
             $val = $cell->getValue();
             $start_date = $stringDate = \PHPExcel_Style_NumberFormat::toFormattedString($val, 'YYYY-MM-DD');
             $index = 1;
             $need_column_index = array(0,1,3,4,7,15,18,19,22,30,31,34,42,47,51,54,62,63,65,76);
-            for ($row = 27; $row <= $total_rows; ++ $row) {
+            for ($row = $start_row; $row <= $total_rows; $row++) {
                 $cell = $sheet->getCellByColumnAndRow(0, $row);
                 $date_val = $cell->getValue();
                 if($date_val != null) {
@@ -63,21 +63,12 @@ else {
                     for ($col = 0; $col < $highestColumnIndex; ++ $col) {
                         if(in_array($col, $need_column_index)) {
                             $cell = $sheet->getCellByColumnAndRow($col, $row);
-                            $val = $cell->getValue();
                             if($col == 0) {
-                                $dif_date = (int) (($row - 27) / 3);
-                                if($dif_date == 0)
-                                    $val = $start_date;
-                                else {
-                                    $d_str = explode("+", $val);
-                                    if(count($d_str) > 1) {
-                                        $val = date('Y-m-d', strtotime("+" . $d_str[1] . " days", strtotime($start_date)));
-                                        $start_date = $val;
-                                    }
-                                    else
-                                        $val = $start_date;
-                                }
+                                $value = $cell->getFormattedValue();
+                                $val = date('Y-m-d', strtotime($value));
                             }
+                            else
+                                $val = $cell->getValue();
 
                             if($col == 3 && round($val, 5) == 1462.85417 ) {
                                 $val = '20.30';
@@ -91,6 +82,7 @@ else {
 
                     //Check exist old data and update
                     $date = $records[$index][0];
+                    
                     $shift = $records[$index][1];
                     $chk_query = "SELECT id FROM {$tblContainerDevan} WHERE `date` = '{$date}' AND `shift` = '{$shift}'";
                     $chk_result = $db->query($chk_query);
@@ -127,6 +119,7 @@ else {
                 }
             }
 
+            //var_dump($records);exit();
             if(count($records) > 2) {
                 $fields = "`".implode("`, `", array_shift($records))."`";
                 $values = array();

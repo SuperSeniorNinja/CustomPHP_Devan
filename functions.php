@@ -1012,7 +1012,8 @@ function read_container_devan_member_screen($post_data)
     if(mysqli_num_rows($result) > 0) {
         $devan = mysqli_fetch_array($result);
         //Update Renban No
-        $renban_no = update_renban_no($devan['id']);
+        $renban_no = get_setting('renban_no_prefix');
+        //$renban_no = update_renban_no($devan['id']);
 
         echo '<div class="row" style="background-color: #1797FF; color: #FFF;">';
         echo '<div class="offset-md-2 col-md-7" style="padding: 50px 10px; min-width: 650px;">';
@@ -1029,7 +1030,7 @@ function read_container_devan_member_screen($post_data)
         echo '<button class="btn btn-primary" id="btn_chk_container_renban" style="height: 60px; margin-left: 20px; width: 160px; margin-top: -20px; font-size: 32px;" value="'.$devan['devan_inbound_renban_no_1'].'">CHECK</button>';
 
         //Container No
-        echo '<h1 style="font-size: 48px;">Container No: <span style="color: #000;">'.$devan['in_house_container_number'].'</span></h1>';
+        echo '<h1 style="font-size: 48px;">Container No: <span style="color: #000;">'.$devan['container_number'].'</span></h1>';
 
         //Reban
         echo '<h1 style="font-size: 48px;">';
