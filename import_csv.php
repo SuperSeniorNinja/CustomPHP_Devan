@@ -31,8 +31,9 @@ else {
             if($target == 'part2kanban') {
                 foreach($records as $index => $row){
                     if($index > 1) {
-                        $kanban = $row[0];
-                        $part_number = $row[1];
+                        $row_value = preg_split('/\s+/', $row[0], -1, PREG_SPLIT_NO_EMPTY); //to explode by space, explode does not work for some reason here. I instead used preg_split
+                        $kanban = $row_value[0];
+                        $part_number = $row_value[1];
                         $query = "SELECT * FROM {$tblPart2Kanban} WHERE kanban = '{$kanban}'";
                         $result = $db->query($query);
                         $k = mysqli_fetch_object($result);

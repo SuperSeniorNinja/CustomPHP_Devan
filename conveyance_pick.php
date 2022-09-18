@@ -450,11 +450,17 @@ require_once ("assets.php");
         });
 
         $(document).on('keypress', "#kanban_input", function (e) {
+            console.log("Here I am");
+            console.log(e.keyCode);
             if (e.keyCode == 13) {
                 var value = $(this).val().toUpperCase();
                 $("#kanban_id").val(0);
                 var kanban_no = $("#current_kanban").text();
                 var address = $("#current_address").text();
+                console.log("kanban_no");                
+                console.log(kanban_no);
+                console.log("address");
+                console.log(address);
                 if(kanban_no != '' || address != '') {
                     if(value == kanban_no || value == address) {
                         var kanban_id = $("#current_kanban_id").val();

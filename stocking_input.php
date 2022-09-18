@@ -14,6 +14,9 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
     .table thead>tr>th, tbody>tr>td {
         text-align: center;
     }
+    .nostock{
+        display: none;
+    }
 </style>
 <body class="hold-transition sidebar-collapse layout-top-nav" onload="startTime()">
 <div class="wrapper">
@@ -118,6 +121,27 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
     </div>
     <!-- /.modal-dialog -->
 </div>
+
+<!-- Notification/confirm modal -->
+<div class="modal fade" id="notification_modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="icon fas fa-check"></i> <span></span></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h4></h4>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- /.modal-dialog -->
+</div>
 <!-- REQUIRED SCRIPTS -->
 
 <!-- jQuery -->
@@ -138,9 +162,9 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
         var posY = 0;
         var event_counter = 0;
 
-        $("#barcode_div").on('click', function () {
+        /*$("#barcode_div").on('click', function () {
             LockTarget();
-        });
+        });*/
 
         document.addEventListener("pointerlockchange", function () {
             event_counter++;
@@ -183,7 +207,8 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
          */
         $("#barcode").on('keyup', function (e) {
             if (e.keyCode == 13) {
-                var overstock = $("#btn_overstock").val();
+                perform_stock_operation();
+                /*var overstock = $("#btn_overstock").val();
                 if($(this).hasClass('in')) {
                     var input_kind = $("#input_kind").val();
                     var input = $(this);
@@ -242,10 +267,72 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                     }
                 } else{
                     return;
-                }
+                }*/
             }
         });
 
+        function perform_stock_operation() {
+            var overstock = $("#btn_overstock").val();
+            if($("#barcode").hasClass('in')) {
+                var input_kind = $("#input_kind").val();
+                var input = $("#barcode");
+                if(input_kind == "part") {
+                    var barcode = $("#barcode").val();
+                    if(barcode == "999999") {
+                        location.href = 'logout.php';
+                        return false;
+                    }
+                    if(overstock == "overstock") {
+                        go_to_overstock(barcode);
+                        input.val('');
+                        $("#success_message").text(barcode + " has been added to overstock");
+                        $(".alert-success").fadeTo(2000, 500).slideUp(500, function () {
+                            $(".alert-success").slideUp(500);
+                        });
+                        return false;
+                    } else {
+                        var scanned_barcode = $("#scanned_barcode").val();
+                        var request_scan = $("#request_scan").val();
+
+                        if(request_scan == ""){
+                            request_scan += barcode;
+                        } else {
+                            request_scan += "," + barcode;
+                        }
+                        scanned_barcode += "," + barcode;
+                        $("#scanned_barcode").val(scanned_barcode);
+                        $("#request_scan").val(request_scan);
+                        $("#input_kind").val('location');
+                        $("#input_title").text('Location Barcode Input');
+                        $("#input_title").css('color', 'blue');
+                        input.val('');
+                        read_area_lane_status(barcode, $("#stocking_action").val());
+                    }
+
+                } else {
+                    var tool_location = $("#barcode").val();
+                    if(tool_location == "999999") {
+                        location.href = 'logout.php';
+                        return false;
+                    }
+                    var request_location = $("#request_location").val();
+                    if(request_location == ""){
+                        request_location += tool_location;
+                    } else {
+                        request_location += "," + tool_location;
+                    }
+                    $("#request_location").val(request_location);
+                    $("#input_kind").val('part');
+                    $("#input_title").text('Part Barcode Input');
+                    $("#input_title").css('color', '#0e0e0e');
+                    input.val('');
+                    barcode_scan();
+                    //read_area_lane_status('')
+                }
+            } else{
+                return;
+            }
+        }
         function barcode_scan()
         {
             var part = $("#request_scan").val();
@@ -266,16 +353,17 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                 dataType:'JSON',
             }).done(function (result) {
                 //console.log(result);
+                $(".oldest_info_div").hide();
                 if(result.error != '') {
-                    $("#error_message").text(result.error);
-                    $(".alert-danger").fadeTo(2000, 500).slideUp(500, function () {
-                        $(".alert-danger").slideUp(500);
-                    });
+                    //confirm pop up
+                    $("#notification_modal").modal();
+                    $("#notification_modal .modal-title span").text("Error");
+                    $("#notification_modal .modal-body h4").text(result.error);
                 } else {
-                    $("#success_message").text(result.success);
-                    $(".alert-success").fadeTo(2000, 500).slideUp(500, function () {
-                        $(".alert-success").slideUp(500);
-                    });
+                    //confirm pop up
+                    $("#notification_modal").modal();
+                    $("#notification_modal .modal-title span").text("Success");
+                    $("#notification_modal .modal-body h4").text(result.success);
                 }
                 $("#request_scan").val('');
                 $("#request_location").val('');
@@ -305,7 +393,7 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
         Read Status of Area and Lanes
          */
 
-        function read_area_lane_status(part_no)
+        function read_area_lane_status(part_no, direction)
         {
             $.ajax({
                 url: "actions.php",
@@ -313,11 +401,19 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                 data: {
                     action:"read_area_lane_status",
                     part_no:part_no,
-                    page:'Stocking'
+                    page:'Stocking',
+                    direction: direction
                 },
                 dataType:'HTML',
             }).done(function (html) {
                 $("#lane_status_div").html(html);
+
+                if(direction == 'out')
+                    //for in, we should not show empty stock lanes
+                    process_no_stock_lanes("hide");
+                else
+                    //for out, we should not show empty stock lanes
+                    process_no_stock_lanes("show");
             });
         }
 
@@ -357,9 +453,36 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                     stocking_action:updated_action,
                 },
             }).done(function (result) {
-                console.log(result);
+                read_area_lane_status($("#request_scan").val(), stocking_action);
+                /*if(updated_action == 'in'){
+                    //for in, we should not show empty stock lanes
+                    process_no_stock_lanes("hide");
+                }
+                    
+                else
+                    //for out, we should not show empty stock lanes
+                    process_no_stock_lanes("show");*/
             });
         });
+
+        function process_no_stock_lanes(flag){
+            var tr_doms = $("#lane_status_div tbody tr");
+            if(tr_doms){
+                for(var i = 0; i < tr_doms.length; i++){
+                    if(tr_doms.eq(i).hasClass("lane_row")){ //if lane number row
+                        //get stock value and add hide class if current stock equals to 0
+                        var lane_stock_text = tr_doms.eq(i).find("td").last().text();
+                        var stock_value = parseInt(lane_stock_text.split("/")[0]);
+                        if(stock_value == 0){ //if no stock
+                            if(flag == "hide")
+                                tr_doms.eq(i)[0].classList.add('nostock');                                                           
+                            else
+                                tr_doms.eq(i)[0].classList.remove('nostock');
+                        }
+                    }
+                }
+            }
+        }
 
         $("#btn_overstock").on('click', function () {
             var overstock = $(this).val();
@@ -388,6 +511,58 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
             });
         });
 
+        /*Lane row clickable*/
+        $(document).on("click", ".lane_row", function (e) {
+            var lane = $(this).data("lane");
+            var lane_id = lane.split(" ")[1];
+            //get barcode_in from lane_no
+            get_barcodein_from_laneno(lane_id);
+            
+            //do visually update stock in/out
+            update_available_lane_stocks($(this));
+        });
+
+        //do visually update stock in/out without reloading of the pages
+        function update_available_lane_stocks(lane_dom){
+            var stock_dom = lane_dom.find("td").last().text();
+            var stock_value = parseInt(stock_dom.split("/")[0]);
+            var stock_total = parseInt(stock_dom.split("/")[1]);
+            //if currently stock in, we add 1 otherwise decrease 1, for 0, we show an alert
+            if($("#stocking_action").val() == "in"){
+            //if($("#barcode").hasClass('in')){
+                stock_value = stock_value + 1;
+            }
+            else
+                stock_value = stock_value - 1;
+
+            if(stock_value <= 0)
+                stock_value = 0;
+
+            var updated_stock_text = stock_value + "/" + stock_total;
+            lane_dom.find("td").last().text(updated_stock_text);
+        }
+
+        //get barcode in from the lane number when user press lane row in the table
+        function get_barcodein_from_laneno(lane_id){
+            $.ajax({
+                url: "actions.php",
+                method: "post",
+                data: {
+                    action:"get_barcodein_from_laneno",
+                    lane_id:lane_id,
+                },
+            }).done(function (result) {
+                if(result == "failure")
+                    alert("Unable to process at the moment.");
+                else
+                {
+                    $("#barcode").val(result);
+                    //do stock in/out operation in backend
+                    perform_stock_operation();
+                }
+                console.log(result);
+            });
+        }
     });
 </script>
 </body>

@@ -84,4 +84,6 @@ td.user-name {
 	overflow-y: auto;
 	max-height: 450px;
 }
-
+.cursor_pointed{
+  cursor: pointer;
+}

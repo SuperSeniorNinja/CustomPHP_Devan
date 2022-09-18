@@ -998,19 +998,19 @@ function read_container_devan($post_data)
 
 function read_container_devan_member_screen($post_data)
 {
-    global $db, $tblContainerDevan, $today;
+    global $db, $tblContainerDevan, $today;    
     if($post_data['date'] == 'today') {
         //$query = "SELECT * FROM {$tblContainerDevan} WHERE `revan_state` = 'scheduled' ORDER BY `date` ASC LIMIT 1";
-        $query = "SELECT * FROM {$tblContainerDevan} WHERE `date` >= '{$today}' AND `is_completed` = 0 ORDER BY `date` ASC LIMIT 1";
+        $query = "SELECT * FROM {$tblContainerDevan} WHERE `date` >= '{$today}' AND `is_completed` = 0 AND `inbound_renban_air_freight_case_number`!='' ORDER BY `date` ASC LIMIT 1";
     } else {
         $date = convert_date_string($post_data['date']);
-        //$query = "SELECT * FROM {$tblContainerDevan} WHERE `revan_state` = 'scheduled' AND `date` = '{$date}' ORDER BY `date` ASC LIMIT 1";
-        $query = "SELECT * FROM {$tblContainerDevan} WHERE `date` >= '{$date}' AND `is_completed` = 0 ORDER BY `date` ASC LIMIT 1";
+        $query = "SELECT * FROM {$tblContainerDevan} WHERE `date` >= '{$date}' AND `is_completed` = 0  AND `inbound_renban_air_freight_case_number`!='' ORDER BY `date` ASC LIMIT 1";
     }
 
     $result = $db->query($query);
     if(mysqli_num_rows($result) > 0) {
         $devan = mysqli_fetch_array($result);
+        //var_dump($devan);exit();
         //Update Renban No
         $renban_no = get_setting('renban_no_prefix');
         //$renban_no = update_renban_no($devan['id']);
@@ -1021,16 +1021,36 @@ function read_container_devan_member_screen($post_data)
             $shift = 'Days';
         else
             $shift = 'Night';
+
+        //if north america member plan, we show it at the top
+        $devan_plan = $devan['inbound_renban_air_freight_case_number'];
+        $devan_plan_flag = false;
+        $complete_btn_disabled = "disabled";
+        if( strpos( strtolower($devan_plan), "devan" ) !== false || strpos( strtolower($devan_plan), "america" ) !== false) {
+            $devan_plan_flag = true;
+            
+        }
+
+        //if north america member plan 
+        if($devan_plan_flag){
+            $devan_plan_value = rtrim(explode("-", $devan_plan)[0]);
+            echo '<h1 style="font-size: 48px;text-align: center;">'.$devan_plan_value.'</h1>';
+            $complete_btn_disabled = "";
+        }
+
         //Date, Shift and Time
         echo '<h1 style="font-size: 48px;"><span style="margin-right: 148px;">'.date('d/m/Y', strtotime($devan['date'])).'</span><span style="margin-right: 60px;">'.$shift.'</span><span>'.$devan['time'].'</span></h1>';
 
         //Container Renban
-        echo '<label style="font-size: 48px; font-weight: normal">Container Renban:</label>';
-        echo '<input type="text" id="container_renban" name="container_renban" class="form-control" style="width: 420px; display: inline-block; height: 60px; font-size: 48px;">';
-        echo '<button class="btn btn-primary" id="btn_chk_container_renban" style="height: 60px; margin-left: 20px; width: 160px; margin-top: -20px; font-size: 32px;" value="'.$devan['devan_inbound_renban_no_1'].'">CHECK</button>';
+        //if north america member dose not need to confirm container number to press finish
+        if( !strpos( strtolower($devan_plan), "devan" ) && !strpos( strtolower($devan_plan), "america" )) {
+            echo '<label style="font-size: 48px; font-weight: normal">Container Renban:</label>';
+            echo '<input type="text" id="container_renban" name="container_renban" class="form-control" style="width: 420px; display: inline-block; height: 60px; font-size: 48px;">';
+            echo '<button class="btn btn-primary" id="btn_chk_container_renban" style="height: 60px; margin-left: 20px; width: 160px; margin-top: -20px; font-size: 32px;" value="'.$devan['on_dock_inbound_renban'].'">CHECK</button>';
+        }
 
         //Container No
-        echo '<h1 style="font-size: 48px;">Container No: <span style="color: #000;">'.$devan['container_number'].'</span></h1>';
+        echo '<h1 style="font-size: 48px;">Container No: <span style="color: #000;">'.$devan['on_doc_container_number'].'</span></h1>';
 
         //Reban
         echo '<h1 style="font-size: 48px;">';
@@ -1039,7 +1059,7 @@ function read_container_devan_member_screen($post_data)
 
         //Reban
         echo '<div style="width: 100%; text-align: center;" >';
-        echo '<button class="btn btn-success" id="btn_complete" style="width: 240px; font-size:36px; margin:0;" disabled value="'.$devan['id'].'" data-renban="check">Complete</button>';
+        echo '<button class="btn btn-success" id="btn_complete" style="width: 240px; font-size:36px; margin:0;" '.$complete_btn_disabled.' value="'.$devan['id'].'" data-renban="check">Complete</button>';
         echo '</div>';
         echo '</div>';
         echo '<div class="col-md-3" style="display: flex; align-items: center;">';
@@ -1100,12 +1120,16 @@ function update_revan_state($post_data)
  * Stocking Page
  */
 
-function read_area_lane_status($post_data)
+function read_area_lane_status($post_data, $direction = NULL)
 {
+
     global $db, $tblScanLog, $STOCKING_AREAS;
     $part_no = $post_data['part_no'];
     $page = $post_data['page'];
-
+    if(!isset($direction))
+        $direction = $_SESSION['stocking_action'];
+    else
+        $direction = $post_data['direction'];
     if(empty($part_no))
         $query = "SELECT * FROM {$tblScanLog} WHERE `page` = '{$page}' AND `booked_in` = 1 AND `booked_out` = 0";
     else
@@ -1123,6 +1147,7 @@ function read_area_lane_status($post_data)
     }
 
     $areas = array();
+    $lanes;
     foreach ($STOCKING_AREAS as $index => $area) {
         $lanes = get_all_lanes($area);
         foreach ($lanes as $lane){
@@ -1151,25 +1176,106 @@ function read_area_lane_status($post_data)
         }
     }
 
-    echo '<div class="row">';
+    $return_html = '<div class="row">';
+    $all_lanes;
+    $stock_available_lanes = array();
+    $lanes_html = ``;
+    $lanes_count = array(); //to get the location/area which has the most number of available lanes
+    $lanes_have_most_stock = ""; //to get the lane which has the most stocks > 0
+    $area_have_most_stock = "";
     foreach ($areas as $area => $lanes){
-        echo '<div class="col-sm-4">';
-        echo '<h1>'.$area.'</h1>';
-        echo '<table class="table table-bordered table-striped">';
+        $all_lanes = $lanes;
+
+        $lanes_html .='<div class="col-sm-4">';
+        $lanes_html .='<h1>'.$area.'</h1>';
+        $lanes_html .='<table class="table table-bordered table-striped">';
         if(!empty($part_no)){
-            echo '<tr><th>Part</th><th>'.$part_no.'</th></tr>';
+            $lanes_html .='<tr><th>Part</th><th>'.$part_no.'</th></tr>';
         }
-        echo '<tr><td colspan="2" style="text-align: left;">Lanes Available</td></tr>';
+        
+        $lanes_html .='<tr><td colspan="2" style="text-align: left;">Lanes Available</td></tr>';
+        
+        $default_lane_stock = (isset($lanes) && !empty($lanes) ) ? $lanes[0]["filled_allocation"] : 0;
         foreach ($lanes as $lane) {
-            echo '<tr>';
-            echo '<td>'.$lane['lane'].'</td>';
-            echo '<td>'.$lane['filled_allocation'].'/'.$lane['allocation'].'</td>';
-            echo '</tr>';
+            if($lane["filled_allocation"] > $default_lane_stock && $lane["filled_allocation"] <= $lane["allocation"]){
+                $area_have_most_stock = $area;
+                $lanes_have_most_stock = $lane['lane'];
+            }
+
+            $lanes_html .='<tr class="cursor_pointed lane_row" data-lane="'.$lane["lane"].'" style="cursor: pointer;">';
+            $lanes_html .='<td>'.$lane['lane'].'</td>';
+            $lanes_html .='<td>'.$lane['filled_allocation'].'/'.$lane['allocation'].'</td>';
+            $lanes_html .='</tr>';
+
+            //show scan in/out lane info with available stocks > 0 
+            array_push($stock_available_lanes, explode(" ", $lane['lane'])[1]);
         }
-        echo '</table>';
-        echo '</div>';
+
+        //array_push($lanes_count, count($lanes));
+
+        $lanes_html .='</table>';
+        $lanes_html .='</div>';
     }
-    echo '</div>';
+    $lanes_html .='</div>';
+
+    //set default values
+    if(empty($lanes_have_most_stock) && empty($area_have_most_stock)){
+        foreach ($areas as $area => $lanes){
+            $area_have_most_stock = $area;
+            foreach ($lanes as $lane) {            
+                $lanes_have_most_stock = $lane['lane'];
+                break;
+            }
+        }
+    }    
+
+    //for scan in case
+    /*$most_have_lanes_index = array_search(max($lanes_count), $lanes_count);
+    $area_code = $STOCKING_AREAS[$most_have_lanes_index];*/
+
+    //oldest scaned in/out lanes html on the top of the table
+    $oldest_scanned_lanes_html = get_oldest_lanes_scanned($stock_available_lanes, $post_data, $direction, $area_have_most_stock, $lanes_have_most_stock);
+
+    $return_html = $return_html.$oldest_scanned_lanes_html.$lanes_html;
+    echo $return_html;
+}
+
+//get oldest scan in/out lane info
+function get_oldest_lanes_scanned($stock_available_lanes, $post_data, $direction, $area_code, $lean_name){// direction : in/out
+    global $db, $tblScanLog;
+    $part_no = $post_data["part_no"];
+    $return_html = '';
+
+    //if direction out-> the one with the oldest part scanned in
+    if($direction == "out"){
+        if($stock_available_lanes)
+            $sort_query = "SELECT part, page, lane_id FROM {$tblScanLog} WHERE `lane_id` IN (".implode(',',$stock_available_lanes).")" ." AND `part`='".$part_no."'ORDER BY booked_in_time LIMIT 1";        
+        else
+            return $return_html;
+
+        $sort_result = $db->query($sort_query);
+        if($sort_result->num_rows > 0){
+            while($row = mysqli_fetch_object($sort_result)){
+                $part_no = $row->part;
+                $lane_id = $row->lane_id;
+                $lean_name = "Lane ".$lane_id;
+            }
+        }
+    }
+
+    $return_html = '
+        <div class="col-sm-4 oldest_info_div" style="text-align: center;">
+            <h1>Part: '.strtoupper($part_no).'</h1>
+        </div>
+        <div class="col-sm-4 oldest_info_div" style="text-align: center;">
+            <h1>Area: '.$area_code.'</h1>
+        </div>
+        <div class="col-sm-4 oldest_info_div" style="text-align: center;">
+            <h1>Lane: '.$lean_name.'</h1>
+        </div>
+    ';
+
+    return $return_html;
 }
 
 function get_filled_lanes_by_part($post_data)
@@ -1496,6 +1602,22 @@ function overstock_view()
     }
     echo "</table>";
 }
+
+/*get barcode in from lane number*/
+function get_barcodein_from_laneno(){
+    $lane_no = $_POST["lane_id"];
+    global $db, $tblStocking;
+    $query = "SELECT barcode_in as 'barcode' FROM {$tblStocking} where `lane_no` ='".$lane_no."'";
+    $result = $db->query($query);
+
+    $row = mysqli_fetch_object($result);
+    if($row) {
+        echo $row->barcode;
+    }
+    else
+        echo "failure";
+}
+
 /*
  * Conveyance
  */

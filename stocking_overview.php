@@ -164,7 +164,7 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                                         //Free Location
                                         $lanes = get_all_lanes('Free Location');
                                         echo '<h5 style="text-align: left;">Free Location</h5>';
-                                        foreach ($lanes as $lane){
+                                        foreach ($lanes as $array_index => $lane){
                                             echo '<div class="row">';
                                             echo '<div class="col-md-12">';
                                             echo '<table class="float-right lane-table" style="border-collapse: separate; border-spacing: 2px;" data-area="Free Location">';
@@ -172,7 +172,7 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                                             $allocations = $lane->allocation;
                                             $index = 0;
                                             for($i=$allocations; $i>0; $i--){
-                                                echo '<td data-index="'.$index.'" id="td_'.$lane->id.'_'.$i.'" style="border-bottom: 2px solid #424242; border-top: 1px solid #424242;">' .$i.'</td>';
+                                                echo '<td data-index="'.$index.'" id="td_'.$lane->id.'_'.$i.'" style="border-bottom: 2px solid #424242; border-top: 1px solid #424242;">' .chr(64 + count($lanes) - $array_index).$i.'</td>';
                                                 $index++;
                                             }
                                             echo '</tr>';
@@ -565,6 +565,8 @@ $booked_in_out = get_booked_in_out('Stocking', $shift_inf['shift'], $shift_inf['
                 for(var i = 0; i<data.length; i++) {
                     var td_id = data[i].id;
                     var td_class = data[i].td_class;
+                    console.log("td_class");
+                    console.log(td_class);
                     if(td_class) {
                         $("#" + td_id).removeClass('full-td');
                         $("#" + td_id).removeClass('m-full-td');
